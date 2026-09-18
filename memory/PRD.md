@@ -27,6 +27,7 @@ Responsive web app for 'Alfred', an AI travel assistant chat interface for EaseM
 - E2E tested: 46/46 assertions passed (testing iteration_1)
 - Booking flow (iteration_2, 28/28 passed): flight intent detection ('book my flight...') → date chips/free-text → budget parsing (₹ lakh/k) → flight deal card (Check & Book Now / Book Here) + 2 hotel cards per destination (rating, ₹/night, Open/Save/Select) → total cost summary (Sounds Okay/Modify, Modify loops to dates/budget/hotel) → date confirm → traveller form (gender/name/age) → contact form with simulated autofill → seat pre-book chips → confirming loading → success message + mock download link
 - Post-booking support: update/modify intent → 'What seems to be wrong?' → correction accepted (email regex extraction) → toll-free 1800-419-4646 + cab pickup offer chips
+- (iteration_3) Editor 'Book this trip on EaseMyTrip' button wired into the real booking flow (closes modal, posts user message, starts dates→budget→hotels conversation) — no longer a toast dead-end; booking success now shows mock Booking Ref (EMT-######) alongside download link; both typed booking messages and the editor button lead into the same flow
 
 ## Backlog
 - P0: Wire real LLM (Emergent LLM key) to replace scripted responses
