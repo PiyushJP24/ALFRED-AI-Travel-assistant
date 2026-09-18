@@ -27,8 +27,16 @@ let idCounter = 0;
 const nextId = () => `m-${++idCounter}-${Date.now()}`;
 
 const destShort = (d) => d.name.split("—")[0].trim();
-const hotelsFor = (dest) => HOTELS[dest.id] || HOTELS.default;
-const computeTotal = (b, hotel) => flightPrice(b.destination) * 2 + hotel.pricePerNight * (b.plan.days - 1);
+const withPrices = (hotels) =>
+  hotels.map((h) => ({
+    ...h,
+    pricePerNight: Number(h.pricePerNight) > 0 ? Number(h.pricePerNight) : 5000,
+  }));
+const hotelsFor = (dest) => withPrices(HOTELS[dest.id] || HOTELS.default);
+const computeTotal = (b, hotel) => {
+  const perNight = Number(hotel.pricePerNight) > 0 ? Number(hotel.pricePerNight) : 5000;
+  return flightPrice(b.destination) * 2 + perNight * (b.plan.days - 1);
+};
 
 const COST_CHIPS = [
   { id: "okay", label: "Sounds Okay", testId: "booking-chip-sounds-okay" },
@@ -271,16 +279,12 @@ export default function App() {
 
   const handleSelectHotel = useCallback(
     (hotel) => {
-      let snapshot = null;
-      setBooking((b) => {
-        if (!b) return b;
-        snapshot = { ...b, hotel, total: computeTotal(b, hotel) };
-        return snapshot;
-      });
-      const b = snapshot;
-      const totalNow = b ? b.total : 0;
-      const withinBudget = b?.budget ? ` (within your ${formatINR(b.budget)} budget)` : "";
-      push({ id: nextId(), type: "text", role: "user", text: `Flight: AA (Round), ${hotel.name} (${b ? b.plan.days : 4} days)` });
+      if (!booking) return;
+      const total = computeTotal(booking, hotel);
+      const next = { ...booking, hotel, total };
+      setBooking(next);
+      const withinBudget = next.budget ? ` (within your ${formatINR(next.budget)} budget)` : "";
+      push({ id: nextId(), type: "text", role: "user", text: `Flight: AA (Round), ${hotel.name} (${next.plan.days} days)` });
       const typingId = nextId();
       later(() => push({ id: typingId, type: "typing" }), 300);
       later(() => {
@@ -288,7 +292,7 @@ export default function App() {
           id: typingId,
           type: "text",
           role: "ai",
-          text: `Basis your selection the total cost comes to ${formatINR(totalNow)}${withinBudget}. Is everything okay? Proceed?`,
+          text: `Basis your selection the total cost comes to ${formatINR(total)}${withinBudget}. Is everything okay? Proceed?`,
         });
         push({ id: nextId(), type: "chips", group: "booking-cost", chips: COST_CHIPS });
         setStage("booking-cost");
