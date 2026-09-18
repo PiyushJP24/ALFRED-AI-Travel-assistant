@@ -3,6 +3,32 @@ export const USER_NAME = "Miss Tanwar";
 export const AVATAR_URL =
   "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200";
 
+export const ALFRED_AVATAR =
+  "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200";
+
+export const CHAT_HISTORY = [
+  { section: "Today", items: [{ id: "h1", title: "New Trip Inspiration" }] },
+  { section: "Yesterday", items: [{ id: "h2", title: "Tropical Paradise" }] },
+];
+
+export const TRAVEL_PARTY_CHIPS = [
+  { id: "solo", label: "Solo", testId: "party-chip-solo" },
+  { id: "couple", label: "Couple", testId: "party-chip-couple" },
+  { id: "group", label: "Group", testId: "party-chip-group" },
+];
+
+export function emailFromName(name) {
+  if (!name || !name.trim()) return "guest@gmail.com";
+  const slug = name
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z\s]/g, "")
+    .split(/\s+/)
+    .filter(Boolean)
+    .join(".");
+  return `${slug || "guest"}@gmail.com`;
+}
+
 export const CITIES = ["Bengaluru", "Delhi", "Mumbai", "Hyderabad", "Chennai"];
 
 export const DESTINATIONS = [

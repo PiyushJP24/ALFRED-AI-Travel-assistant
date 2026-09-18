@@ -17,6 +17,7 @@ export default function Header({
   onOpenSaved,
   onNewChat,
   onOpenMenu,
+  onBack,
 }) {
   const [cityOpen, setCityOpen] = useState(false);
   const dropRef = useRef(null);
@@ -34,6 +35,7 @@ export default function Header({
       <div className="flex items-center justify-between px-4 sm:px-5 h-12">
         <button
           data-testid="header-back-button"
+          onClick={onBack}
           className="flex items-center gap-1 text-slate-800 hover:text-[#005B9B] transition-colors"
         >
           <ChevronLeft className="w-5 h-5" strokeWidth={2.5} />

@@ -2,6 +2,7 @@ import { useState, useRef, useCallback } from "react";
 import "@/App.css";
 import { Toaster, toast } from "sonner";
 import Header from "./components/Header";
+import HomeScreen from "./components/HomeScreen";
 import ChatStream from "./components/ChatStream";
 import BottomInputBar from "./components/BottomInputBar";
 import ItineraryEditorModal from "./components/ItineraryEditorModal";
@@ -13,6 +14,7 @@ import {
   INTRO_CHIPS,
   DURATION_PLANS,
   FALLBACK_REPLIES,
+  TRAVEL_PARTY_CHIPS,
   HOTELS,
   greeting,
   buildDays,
@@ -26,11 +28,8 @@ const nextId = () => `m-${++idCounter}-${Date.now()}`;
 
 const destShort = (d) => d.name.split("—")[0].trim();
 const hotelsFor = (dest) => HOTELS[dest.id] || HOTELS.default;
+const computeTotal = (b, hotel) => flightPrice(b.destination) * 2 + hotel.pricePerNight * (b.plan.days - 1);
 
-const DATE_CHIPS = [
-  { id: "last-week", label: "Last week", testId: "booking-date-chip-last-week" },
-  { id: "12-15", label: "12 - 15 Dec", testId: "booking-date-chip-12-15" },
-];
 const COST_CHIPS = [
   { id: "okay", label: "Sounds Okay", testId: "booking-chip-sounds-okay" },
   { id: "modify", label: "Modify", testId: "booking-chip-modify" },
@@ -71,11 +70,13 @@ const introMessages = () => [
 ];
 
 export default function App() {
+  const [chatOpen, setChatOpen] = useState(false);
   const [messages, setMessages] = useState(introMessages);
   const [stage, setStage] = useState("greeting");
   const [location, setLocation] = useState("Bengaluru");
   const [savedIds, setSavedIds] = useState([]);
   const [selectedDestination, setSelectedDestination] = useState(null);
+  const [travelParty, setTravelParty] = useState(null);
   const [itinerary, setItinerary] = useState(null);
   const [booking, setBooking] = useState(null);
   const [editorOpen, setEditorOpen] = useState(false);
@@ -134,12 +135,6 @@ export default function App() {
           id: typingId,
           type: "text",
           role: "ai",
-          text: `Great choice, ${USER_NAME}!`,
-        });
-        push({
-          id: nextId(),
-          type: "text",
-          role: "ai",
           text: "How many days are you thinking? Any specific activity in mind, or should I do some digging on your behalf?",
         });
         push({
@@ -149,6 +144,24 @@ export default function App() {
           chips: DURATION_PLANS.map((p) => ({ ...p, testId: `duration-chip-${p.id}` })),
         });
         setStage("duration");
+      }, 800);
+    },
+    [push, replaceMessage, later]
+  );
+
+  const askParty = useCallback(
+    (dest) => {
+      const typingId = nextId();
+      push({ id: typingId, type: "typing" });
+      later(() => {
+        replaceMessage(typingId, {
+          id: typingId,
+          type: "text",
+          role: "ai",
+          text: `Great choice, ${USER_NAME}! Who's joining you on this trip?`,
+        });
+        push({ id: nextId(), type: "chips", group: "travel-party", chips: TRAVEL_PARTY_CHIPS });
+        setStage("party");
       }, 800);
     },
     [push, replaceMessage, later]
@@ -178,6 +191,23 @@ export default function App() {
     [push, replaceMessage, later]
   );
 
+  const askBudget = useCallback(
+    (b) => {
+      const typingId = nextId();
+      push({ id: typingId, type: "typing" });
+      later(() => {
+        replaceMessage(typingId, {
+          id: typingId,
+          type: "text",
+          role: "ai",
+          text: `Perfect! So, for ${b.plan.days}D/${b.plan.days - 1}N stay in ${destShort(b.destination)}; is there any budget in your mind?`,
+        });
+        setStage("booking-budget");
+      }, 900);
+    },
+    [push, replaceMessage, later]
+  );
+
   const startBooking = useCallback(() => {
     const dest = selectedDestination || DESTINATIONS[0];
     const plan = itinerary?.plan || DURATION_PLANS[0];
@@ -190,46 +220,39 @@ export default function App() {
         type: "text",
         role: "ai",
         text: itinerary
-          ? `I can see you have added an itinerary for this trip. Are you sure about the ${plan.days} days trip? Any specific dates in December?`
-          : `Great! Let's get you booked on ${dest.name}. Any specific dates in mind?`,
+          ? `I can see you have added an itinerary for this trip. Are you sure about the ${plan.days} days trip? Pick your travel dates below.`
+          : `Great! Let's get you booked on ${destShort(dest)}. Pick your travel dates below.`,
       });
-      push({ id: nextId(), type: "chips", group: "booking-dates", chips: DATE_CHIPS });
+      push({ id: nextId(), type: "datepicker" });
       setStage("booking-dates");
     }, 900);
   }, [selectedDestination, itinerary, push, replaceMessage, later]);
 
-  const handleBookingDate = useCallback(
-    (chip) => {
-      if (!booking) return;
-      const dates = chip.id === "last-week" ? "26 - 29 Dec" : chip.id === "12-15" ? "12 - 15 Dec" : chip.label;
-      setBooking((b) => ({ ...b, dates }));
-      push({ id: nextId(), type: "text", role: "user", text: chip.label });
-      const typingId = nextId();
-      later(() => push({ id: typingId, type: "typing" }), 300);
-      later(() => {
-        replaceMessage(typingId, {
-          id: typingId,
-          type: "text",
-          role: "ai",
-          text: `Perfect! So, for ${booking.plan.days}D/${booking.plan.days - 1}N stay in ${destShort(booking.destination)}; is there any budget in your mind?`,
-        });
-        setStage("booking-budget");
-      }, 900);
+  const handleBookingDates = useCallback(
+    (label) => {
+      push({ id: nextId(), type: "text", role: "user", text: label });
+      setBooking((b) => {
+        if (!b) return b;
+        const updated = { ...b, dates: label };
+        askBudget(updated);
+        return updated;
+      });
     },
-    [booking, push, replaceMessage, later]
+    [push, askBudget]
   );
 
   const handleBudgetText = useCallback(
     (text) => {
-      if (!booking) return;
       const budget = parseBudget(text);
-      setBooking((b) => ({ ...b, budget }));
+      setBooking((b) => (b ? { ...b, budget } : b));
+      const dest = booking?.destination || DESTINATIONS[0];
+      const days = booking?.plan?.days || 4;
       const budgetTxt = budget ? ` under ${formatINR(budget)}` : "";
       push({
         id: nextId(),
         type: "text",
         role: "ai",
-        text: `Perfect! So, for ${booking.plan.days}D/${booking.plan.days - 1}N stay${budgetTxt} in ${destShort(booking.destination)} — let me find some good flight & hotel options. Give me a moment!`,
+        text: `Perfect! So, for ${days}D/${days - 1}N stay${budgetTxt} in ${destShort(dest)} — let me find some good flight & hotel options. Give me a moment!`,
       });
       later(() => push({ id: nextId(), type: "text", role: "ai", text: "Just a sec, finding the best flight & stay for you" }), 800);
       later(() => {
@@ -237,8 +260,8 @@ export default function App() {
           id: nextId(),
           type: "hotels",
           flightLabel: "AA (Round)",
-          flightPriceLabel: formatINR(flightPrice(booking.destination) * 2),
-          hotels: hotelsFor(booking.destination),
+          flightPriceLabel: formatINR(flightPrice(dest) * 2),
+          hotels: hotelsFor(dest),
         });
         setStage("booking-options");
       }, 1800);
@@ -248,11 +271,16 @@ export default function App() {
 
   const handleSelectHotel = useCallback(
     (hotel) => {
-      if (!booking) return;
-      const nights = booking.plan.days - 1;
-      const total = flightPrice(booking.destination) * 2 + hotel.pricePerNight * nights;
-      setBooking((b) => ({ ...b, hotel, total }));
-      push({ id: nextId(), type: "text", role: "user", text: `Flight: AA (Round), ${hotel.name} (${booking.plan.days} days)` });
+      let total = 0;
+      setBooking((b) => {
+        if (!b) return b;
+        total = computeTotal(b, hotel);
+        return { ...b, hotel, total };
+      });
+      const b = booking;
+      const totalNow = b ? computeTotal(b, hotel) : 0;
+      const withinBudget = b?.budget ? ` (within your ${formatINR(b.budget)} budget)` : "";
+      push({ id: nextId(), type: "text", role: "user", text: `Flight: AA (Round), ${hotel.name} (${b ? b.plan.days : 4} days)` });
       const typingId = nextId();
       later(() => push({ id: typingId, type: "typing" }), 300);
       later(() => {
@@ -260,7 +288,7 @@ export default function App() {
           id: typingId,
           type: "text",
           role: "ai",
-          text: `Basis your selection the total cost comes to ${formatINR(total)}. Is everything okay? Proceed?`,
+          text: `Basis your selection the total cost comes to ${formatINR(totalNow)}${withinBudget}. Is everything okay? Proceed?`,
         });
         push({ id: nextId(), type: "chips", group: "booking-cost", chips: COST_CHIPS });
         setStage("booking-cost");
@@ -330,13 +358,18 @@ export default function App() {
       later(() => {
         if (chip.id === "dates") {
           replaceMessage(typingId, { id: typingId, type: "text", role: "ai", text: "Sure thing! Pick your new dates." });
-          push({ id: nextId(), type: "chips", group: "booking-dates", chips: DATE_CHIPS });
+          push({ id: nextId(), type: "datepicker" });
           setStage("booking-dates");
         } else if (chip.id === "budget") {
           replaceMessage(typingId, { id: typingId, type: "text", role: "ai", text: "Got it! What's your updated budget?" });
           setStage("booking-budget");
         } else {
-          replaceMessage(typingId, { id: typingId, type: "text", role: "ai", text: "Here are the hotel options again — take your pick." });
+          replaceMessage(typingId, {
+            id: typingId,
+            type: "text",
+            role: "ai",
+            text: `Here are the hotel options again — your dates (${booking.dates || "TBD"})${booking.budget ? ` and budget (${formatINR(booking.budget)})` : ""} stay the same.`,
+          });
           push({
             id: nextId(),
             type: "hotels",
@@ -359,7 +392,7 @@ export default function App() {
       push({ id: typingId, type: "typing" });
       later(() => {
         replaceMessage(typingId, { id: typingId, type: "text", role: "ai", text: "Help me with your Phone & Email Acc" });
-        push({ id: nextId(), type: "form", step: "contact" });
+        push({ id: nextId(), type: "form", step: "contact", traveller: data });
         setStage("booking-form2");
       }, 900);
     },
@@ -489,6 +522,35 @@ export default function App() {
     [push, showDestinations, startBooking]
   );
 
+  const handleSelectDestination = useCallback(
+    (dest) => {
+      if (stage === "building") return;
+      setSelectedDestination(dest);
+      push({ id: nextId(), type: "text", role: "user", text: `I would like to visit ${destShort(dest)}` });
+      askParty(dest);
+    },
+    [stage, push, askParty]
+  );
+
+  const handleSelectParty = useCallback(
+    (chip) => {
+      setTravelParty(chip.label);
+      push({ id: nextId(), type: "text", role: "user", text: chip.label });
+      const dest = selectedDestination || DESTINATIONS[0];
+      askDuration(dest);
+    },
+    [selectedDestination, push, askDuration]
+  );
+
+  const handlePickDuration = useCallback(
+    (plan) => {
+      if (!selectedDestination || stage !== "duration") return;
+      push({ id: nextId(), type: "text", role: "user", text: plan.label });
+      startBuild(selectedDestination, plan);
+    },
+    [selectedDestination, stage, push, startBuild]
+  );
+
   const handleSend = useCallback(
     (text) => {
       push({ id: nextId(), type: "text", role: "user", text });
@@ -497,26 +559,27 @@ export default function App() {
         handleCorrection(text);
         return;
       }
-
       if (stage === "cab-offer") {
         if (/no|thanks|later|nope/i.test(text)) handleCabChoice(CAB_CHIPS[1]);
         else if (/yes|sure|ok/i.test(text)) handleCabChoice(CAB_CHIPS[0]);
         else fallbackReply();
         return;
       }
-
       if (stage === "booked" && /update|modify|change|wrong|email|edit/i.test(text)) {
         startSupport();
         return;
       }
-
       if (stage === "booking-dates" && booking) {
-        handleBookingDate({ id: "custom", label: text });
+        handleBookingDates(text);
         return;
       }
-
       if (stage === "booking-budget" && booking) {
         handleBudgetText(text);
+        return;
+      }
+      if (stage === "party" && selectedDestination) {
+        setTravelParty(text);
+        askDuration(selectedDestination);
         return;
       }
 
@@ -525,7 +588,6 @@ export default function App() {
         startBooking();
         return;
       }
-
       if (stage === "greeting" || stage === "destinations") {
         showDestinations();
         return;
@@ -552,39 +614,21 @@ export default function App() {
       showDestinations,
       startBuild,
       startBooking,
-      handleBookingDate,
+      handleBookingDates,
       handleBudgetText,
       handleCorrection,
       startSupport,
       handleCabChoice,
+      askDuration,
       fallbackReply,
     ]
-  );
-
-  const handleSelectDestination = useCallback(
-    (dest) => {
-      if (stage === "building") return;
-      setSelectedDestination(dest);
-      push({ id: nextId(), type: "text", role: "user", text: `I would like to visit ${dest.name.split("—")[0].trim()}` });
-      askDuration(dest);
-    },
-    [stage, push, askDuration]
-  );
-
-  const handlePickDuration = useCallback(
-    (plan) => {
-      if (!selectedDestination || stage !== "duration") return;
-      push({ id: nextId(), type: "text", role: "user", text: plan.label });
-      startBuild(selectedDestination, plan);
-    },
-    [selectedDestination, stage, push, startBuild]
   );
 
   const handleChipAction = useCallback(
     (group, chip) => {
       if (group === "intro") return handleChip(chip.id);
+      if (group === "travel-party") return handleSelectParty(chip);
       if (group === "duration") return handlePickDuration(chip);
-      if (group === "booking-dates") return handleBookingDate(chip);
       if (group === "booking-cost") return handleConfirmCost(chip.id === "okay");
       if (group === "booking-dates-confirm") return handleDatesConfirm(chip.id === "okay");
       if (group === "booking-modify") return handleModifyChoice(chip);
@@ -592,7 +636,7 @@ export default function App() {
       if (group === "cab-offer") return handleCabChoice(chip);
       return undefined;
     },
-    [handleChip, handlePickDuration, handleBookingDate, handleConfirmCost, handleDatesConfirm, handleModifyChoice, handleSeatChoice, handleCabChoice]
+    [handleChip, handleSelectParty, handlePickDuration, handleConfirmCost, handleDatesConfirm, handleModifyChoice, handleSeatChoice, handleCabChoice]
   );
 
   const handleSaveDestination = useCallback((dest) => {
@@ -634,9 +678,11 @@ export default function App() {
     setMessages(introMessages());
     setStage("greeting");
     setSelectedDestination(null);
+    setTravelParty(null);
     setItinerary(null);
     setBooking(null);
     setEditorOpen(false);
+    setMenuOpen(false);
     setFeedback(null);
     toast.success("Started a fresh chat with Alfred");
   }, []);
@@ -665,63 +711,78 @@ export default function App() {
   const savedDestinations = DESTINATIONS.filter((d) => savedIds.includes(d.id));
 
   return (
-    <div className="min-h-screen md:min-h-0 md:h-screen w-full bg-slate-200/60 md:flex md:items-center md:justify-center md:py-6">
-      <div className="w-full h-[100dvh] md:h-[calc(100vh-3rem)] md:max-w-2xl md:rounded-3xl md:border md:border-slate-200 md:shadow-2xl bg-[#F4F7FA] flex flex-col overflow-hidden">
-        <Header
-          location={location}
-          onLocationChange={setLocation}
-          savedCount={savedIds.length}
-          onOpenSaved={() => setSavedOpen(true)}
-          onNewChat={handleNewChat}
-          onOpenMenu={() => setMenuOpen(true)}
-        />
-        <ChatStream
-          messages={messages}
-          savedIds={savedIds}
-          onChipAction={handleChipAction}
-          onSelectDestination={handleSelectDestination}
-          onSaveDestination={handleSaveDestination}
-          onShareDestination={handleShareDestination}
-          onOpenItinerary={handleOpenItinerary}
-          onSelectHotel={handleSelectHotel}
-          onBookFlight={handleBookFlight}
-          onFormSubmit={(step, data) => (step === "traveller" ? handleTravellerSubmit(data) : handleContactSubmit(data))}
-          onDownload={() => toast.success("Your trip invoice is downloading (demo link)")}
-        />
-        <BottomInputBar onSend={handleSend} onFeedback={handleFeedback} feedback={feedback} />
-      </div>
+    <>
+      <HomeScreen onOpenChat={() => setChatOpen(true)} />
 
-      {editorOpen && itinerary && (
-        <ItineraryEditorModal
-          itinerary={itinerary}
-          saved={savedIds.includes(itinerary.destination.id)}
-          onClose={() => setEditorOpen(false)}
-          onUpdateDays={(days) => setItinerary((prev) => ({ ...prev, days }))}
-          onSave={() => handleSaveDestination(itinerary.destination)}
-          onShare={() => handleShareDestination(itinerary.destination)}
-          onBook={handleBookFromEditor}
-        />
+      {chatOpen && (
+        <div
+          data-testid="alfred-chat-overlay"
+          className="fixed inset-0 z-40 bg-slate-200/60 md:flex md:items-center md:justify-center md:py-6 animate-fade-in"
+        >
+          <div className="w-full h-[100dvh] md:h-[calc(100vh-3rem)] md:max-w-2xl md:rounded-3xl md:border md:border-slate-200 md:shadow-2xl bg-[#F4F7FA] flex flex-col overflow-hidden">
+            <Header
+              location={location}
+              onLocationChange={setLocation}
+              savedCount={savedIds.length}
+              onOpenSaved={() => setSavedOpen(true)}
+              onNewChat={handleNewChat}
+              onOpenMenu={() => setMenuOpen(true)}
+              onBack={() => setChatOpen(false)}
+            />
+            <ChatStream
+              messages={messages}
+              savedIds={savedIds}
+              onChipAction={handleChipAction}
+              onSelectDestination={handleSelectDestination}
+              onSaveDestination={handleSaveDestination}
+              onShareDestination={handleShareDestination}
+              onOpenItinerary={handleOpenItinerary}
+              onSelectHotel={handleSelectHotel}
+              onBookFlight={handleBookFlight}
+              onFormSubmit={(step, data) => (step === "traveller" ? handleTravellerSubmit(data) : handleContactSubmit(data))}
+              onDownload={() => toast.success("Your trip invoice is downloading (demo link)")}
+              onDatesConfirm={handleBookingDates}
+            />
+            <BottomInputBar onSend={handleSend} onFeedback={handleFeedback} feedback={feedback} />
+          </div>
+
+          {editorOpen && itinerary && (
+            <ItineraryEditorModal
+              itinerary={itinerary}
+              saved={savedIds.includes(itinerary.destination.id)}
+              onClose={() => setEditorOpen(false)}
+              onUpdateDays={(days) => setItinerary((prev) => ({ ...prev, days }))}
+              onSave={() => handleSaveDestination(itinerary.destination)}
+              onShare={() => handleShareDestination(itinerary.destination)}
+              onBook={handleBookFromEditor}
+            />
+          )}
+          <SavedTripsDrawer
+            open={savedOpen}
+            savedDestinations={savedDestinations}
+            onClose={() => setSavedOpen(false)}
+            onRemove={handleSaveDestination}
+            onPlan={(d) => {
+              setSavedOpen(false);
+              handleSelectDestination(d);
+            }}
+          />
+          <MenuDrawer
+            open={menuOpen}
+            onClose={() => setMenuOpen(false)}
+            onNewChat={handleNewChat}
+            onOpenSaved={() => {
+              setMenuOpen(false);
+              setSavedOpen(true);
+            }}
+            onSelectHistory={(item) => {
+              setMenuOpen(false);
+              toast.info(`Opening "${item.title}" — chat history is a demo in this build`);
+            }}
+          />
+        </div>
       )}
-      <SavedTripsDrawer
-        open={savedOpen}
-        savedDestinations={savedDestinations}
-        onClose={() => setSavedOpen(false)}
-        onRemove={handleSaveDestination}
-        onPlan={(d) => {
-          setSavedOpen(false);
-          handleSelectDestination(d);
-        }}
-      />
-      <MenuDrawer
-        open={menuOpen}
-        onClose={() => setMenuOpen(false)}
-        onAction={(label) => {
-          setMenuOpen(false);
-          if (label === "Saved Trips") setSavedOpen(true);
-          else toast.info(`${label} is coming soon in the live version!`);
-        }}
-      />
       <Toaster position="top-center" richColors />
-    </div>
+    </>
   );
 }

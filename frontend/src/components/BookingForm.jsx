@@ -1,15 +1,16 @@
 import { useState } from "react";
 import { Wand2, UserRound, Phone } from "lucide-react";
+import { emailFromName } from "../data/alfredData";
 
 const inputCls =
   "w-full text-sm border border-slate-300 rounded-lg px-3 py-2 outline-none focus:border-[#005B9B] focus:ring-2 focus:ring-[#005B9B]/15 transition-all";
 
-export default function BookingForm({ step, onSubmit }) {
+export default function BookingForm({ step, traveller, onSubmit }) {
   const [gender, setGender] = useState("Female");
   const [name, setName] = useState("");
   const [age, setAge] = useState("");
-  const [phone, setPhone] = useState("98450-12345");
-  const [email, setEmail] = useState("nancy.tanwar@gmail.com");
+  const [phone, setPhone] = useState("+91 98450-12345");
+  const [email, setEmail] = useState(() => emailFromName(traveller?.name));
   const [error, setError] = useState("");
 
   if (step === "traveller") {
@@ -95,7 +96,7 @@ export default function BookingForm({ step, onSubmit }) {
         className="flex items-center gap-1.5 text-[11px] font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-2 py-1.5"
       >
         <Wand2 className="w-3 h-3 shrink-0" />
-        Autofilled from your EaseMyTrip profile — edit if needed
+        Autofilled from {traveller?.name ? `${traveller.name}'s` : "your"} EaseMyTrip profile — edit if needed
       </p>
       <input
         data-testid="booking-phone-input"

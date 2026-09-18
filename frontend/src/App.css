@@ -101,3 +101,17 @@
     background: #cbd5e1;
     border-radius: 9999px;
 }
+
+@keyframes bubble-pulse {
+    0%,
+    100% {
+        box-shadow: 0 0 0 0 rgba(0, 164, 213, 0.45);
+    }
+    50% {
+        box-shadow: 0 0 0 10px rgba(0, 164, 213, 0);
+    }
+}
+
+.animate-bubble-pulse {
+    animation: bubble-pulse 2.2s infinite;
+}

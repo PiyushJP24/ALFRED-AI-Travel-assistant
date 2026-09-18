@@ -4,6 +4,7 @@ import DestinationCarousel from "./DestinationCarousel";
 import ItinerarySummaryCard from "./ItinerarySummaryCard";
 import HotelOptions from "./HotelOptions";
 import BookingForm from "./BookingForm";
+import DateRangePicker from "./DateRangePicker";
 
 function TypingDots() {
   return (
@@ -27,6 +28,7 @@ export default function ChatStream({
   onBookFlight,
   onFormSubmit,
   onDownload,
+  onDatesConfirm,
 }) {
   const endRef = useRef(null);
 
@@ -149,7 +151,15 @@ export default function ChatStream({
         if (m.type === "form") {
           return (
             <div key={m.id} className="flex justify-start animate-msg-in">
-              <BookingForm step={m.step} onSubmit={(data) => onFormSubmit(m.step, data)} />
+              <BookingForm step={m.step} traveller={m.traveller} onSubmit={(data) => onFormSubmit(m.step, data)} />
+            </div>
+          );
+        }
+
+        if (m.type === "datepicker") {
+          return (
+            <div key={m.id} className="flex justify-start animate-msg-in">
+              <DateRangePicker onConfirm={onDatesConfirm} />
             </div>
           );
         }
