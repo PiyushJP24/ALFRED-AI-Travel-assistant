@@ -15,8 +15,7 @@ Responsive web app for 'Alfred', an AI travel assistant chat interface for EaseM
 - Components: Header, ChatStream, DestinationCarousel, ItinerarySummaryCard, ItineraryEditorModal, SavedTripsDrawer, MenuDrawer, BottomInputBar
 - HTML5 drag-and-drop for stop reordering; timers cleaned up on new chat
 
-## Implemented (2026-09-18)
-- Responsive chat shell (100dvh mobile, max-w-2xl centered card desktop)
+## Implemented (2026-09-18)- Responsive chat shell (100dvh mobile, max-w-2xl centered card desktop)
 - Two-row header: back+Alfred, city dropdown (5 cities), hamburger menu drawer, profile avatar, saved heart with badge, new-chat pencil
 - Scripted greeting + privacy note + 3 intro chips
 - Typing indicators, destination carousel (snap-x) with Adventure/Culture/Relaxation tags, Save/Share
@@ -36,5 +35,10 @@ Responsive web app for 'Alfred', an AI travel assistant chat interface for EaseM
 - P2: Map view with real map, shareable itinerary links, voice input, Escape-key drawer close
 
 ## Next Tasks
+- (iteration_4) Added EaseMyTrip HOME screen entry point (HomeScreen.jsx) with Flights/Hotels/Trains tiles, services grid, promo banner, bottom nav, and floating Alfred bubble + intro popup card; tapping bubble opens chat as full-screen overlay, header back button returns home
+- Added Solo/Couple/Group travel-party personalization chips between destination selection and duration
+- Redesigned hamburger slide-out menu: profile name, Saved List, New Chat, chat history grouped Today/Yesterday
+- Fixed booking: replaced date chips with a real calendar date-range picker (react-day-picker); hardened budget field isolation on Modify→Hotel (functional setBooking snapshot, budget never mutates); contact-form autofill now derives email from the traveller name just entered (emailFromName)
+- All verified via testing iteration_4 (100%)
 1. Confirm UX with stakeholder, then integrate live AI via Emergent LLM key
 2. Add backend persistence when moving beyond demo

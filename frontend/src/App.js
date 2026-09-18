@@ -271,14 +271,14 @@ export default function App() {
 
   const handleSelectHotel = useCallback(
     (hotel) => {
-      let total = 0;
+      let snapshot = null;
       setBooking((b) => {
         if (!b) return b;
-        total = computeTotal(b, hotel);
-        return { ...b, hotel, total };
+        snapshot = { ...b, hotel, total: computeTotal(b, hotel) };
+        return snapshot;
       });
-      const b = booking;
-      const totalNow = b ? computeTotal(b, hotel) : 0;
+      const b = snapshot;
+      const totalNow = b ? b.total : 0;
       const withinBudget = b?.budget ? ` (within your ${formatINR(b.budget)} budget)` : "";
       push({ id: nextId(), type: "text", role: "user", text: `Flight: AA (Round), ${hotel.name} (${b ? b.plan.days : 4} days)` });
       const typingId = nextId();
