@@ -24,7 +24,7 @@ export default function DestinationCarousel({
           <div
             key={d.id}
             data-testid={`destination-card-${d.id}`}
-            className="destination-card-item snap-start shrink-0 w-[235px] bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+            className="destination-card-item snap-start shrink-0 w-[225px] bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow"
           >
             <button
               data-testid={`destination-select-button-${d.id}`}

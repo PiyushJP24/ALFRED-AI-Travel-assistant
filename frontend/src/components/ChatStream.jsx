@@ -30,7 +30,7 @@ export default function ChatStream({
   }, [messages]);
 
   return (
-    <div
+    <main
       data-testid="chat-stream-container"
       className="flex-1 overflow-y-auto px-3 sm:px-5 py-4 space-y-3"
     >
@@ -130,6 +130,6 @@ export default function ChatStream({
         return null;
       })}
       <div ref={endRef} />
-    </div>
+    </main>
   );
 }
