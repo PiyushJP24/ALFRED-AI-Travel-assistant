@@ -130,3 +130,88 @@ export function buildDays(destination, numDays) {
   }
   return days;
 }
+
+const GOA_HOTELS = [
+  {
+    id: "goa-h1",
+    name: "Tropicana Beach Resort",
+    rating: 8.6,
+    reviews: "4.5K",
+    pricePerNight: 9800,
+    image:
+      "https://images.pexels.com/photos/13585378/pexels-photo-13585378.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+  },
+  {
+    id: "goa-h2",
+    name: "Palm Grove Inn",
+    rating: 8.1,
+    reviews: "2.1K",
+    pricePerNight: 6200,
+    image:
+      "https://images.unsplash.com/photo-1725006136539-46bef885df06?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTYxOTF8MHwxfHNlYXJjaHwyfHxiZWFjaCUyMHJlc29ydCUyMGhvdGVsJTIwcG9vbCUyMGdvYXxlbnwwfHx8fDE3ODk3MzA5MTl8MA&ixlib=rb-4.1.0&q=85",
+  },
+];
+
+export const HOTELS = {
+  goa: GOA_HOTELS,
+  jaipur: [
+    {
+      id: "jai-h1",
+      name: "Royal Orchid Palace",
+      rating: 8.6,
+      reviews: "4.5K",
+      pricePerNight: 8400,
+      image:
+        "https://images.unsplash.com/photo-1589901164570-f9de6556e1c1?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2NzZ8MHwxfHNlYXJjaHwyfHxpbmRpYSUyMGhlcml0YWdlJTIwcGFsYWNlJTIwaG90ZWx8ZW58MHx8fHwxNzg5NzMwOTE5fDA&ixlib=rb-4.1.0&q=85",
+    },
+    {
+      id: "jai-h2",
+      name: "Pink City Haveli",
+      rating: 8.1,
+      reviews: "2.1K",
+      pricePerNight: 5400,
+      image:
+        "https://images.unsplash.com/photo-1590766940554-634a7ed41450?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2NzZ8MHwxfHNlYXJjaHwzfHxpbmRpYSUyMGhlcml0YWdlJTIwcGFsYWNlJTIwaG90ZWx8ZW58MHx8fHwxNzg5NzMwOTE5fDA&ixlib=rb-4.1.0&q=85",
+    },
+  ],
+  kerala: [
+    {
+      id: "ker-h1",
+      name: "Backwater Ripples Resort",
+      rating: 8.6,
+      reviews: "4.5K",
+      pricePerNight: 9200,
+      image:
+        "https://images.pexels.com/photos/37833119/pexels-photo-37833119.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+    },
+    {
+      id: "ker-h2",
+      name: "Coconut Lagoon Inn",
+      rating: 8.1,
+      reviews: "2.1K",
+      pricePerNight: 5900,
+      image:
+        "https://images.unsplash.com/photo-1674205710296-606898df6642?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTYxOTF8MHwxfHNlYXJjaHwzfHxiZWFjaCUyMHJlc29ydCUyMGhvdGVsJTIwcG9vbCUyMGdvYXxlbnwwfHx8fDE3ODk3MzA5MTl8MA&ixlib=rb-4.1.0&q=85",
+    },
+  ],
+  default: GOA_HOTELS,
+};
+
+export function formatINR(n) {
+  return "₹" + Math.round(n).toLocaleString("en-IN");
+}
+
+export function parseBudget(text) {
+  const clean = text.replace(/,/g, "");
+  const lakh = clean.match(/([\d.]+)\s*(lakh|lac)\b/i);
+  if (lakh) return parseFloat(lakh[1]) * 100000;
+  const k = clean.match(/([\d.]+)\s*k\b/i);
+  if (k) return parseFloat(k[1]) * 1000;
+  const num = clean.replace(/[₹\s]/g, "").match(/\d{4,}/);
+  return num ? parseInt(num[0], 10) : null;
+}
+
+export function flightPrice(destination) {
+  const m = destination.flight.replace(/,/g, "").match(/\d+/);
+  return m ? parseInt(m[0], 10) : 5000;
+}

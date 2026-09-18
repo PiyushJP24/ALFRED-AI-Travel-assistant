@@ -1,7 +1,9 @@
 import { useEffect, useRef } from "react";
-import { Bot } from "lucide-react";
+import { Bot, Link2 } from "lucide-react";
 import DestinationCarousel from "./DestinationCarousel";
 import ItinerarySummaryCard from "./ItinerarySummaryCard";
+import HotelOptions from "./HotelOptions";
+import BookingForm from "./BookingForm";
 
 function TypingDots() {
   return (
@@ -16,12 +18,15 @@ function TypingDots() {
 export default function ChatStream({
   messages,
   savedIds,
-  onChip,
+  onChipAction,
   onSelectDestination,
   onSaveDestination,
   onShareDestination,
-  onPickDuration,
   onOpenItinerary,
+  onSelectHotel,
+  onBookFlight,
+  onFormSubmit,
+  onDownload,
 }) {
   const endRef = useRef(null);
 
@@ -88,7 +93,7 @@ export default function ChatStream({
                 <button
                   key={c.id}
                   data-testid={c.testId}
-                  onClick={() => (m.group === "intro" ? onChip(c.id) : onPickDuration(c))}
+                  onClick={() => onChipAction(m.group, c)}
                   className="text-xs font-semibold text-amber-900 bg-amber-50 border-2 border-amber-400/70 rounded-xl px-3.5 py-2 hover:bg-amber-100 hover:border-amber-500 hover:-translate-y-0.5 transition-all"
                 >
                   {c.label}
@@ -123,6 +128,48 @@ export default function ChatStream({
                 onSave={() => onSaveDestination(m.destination)}
                 onShare={() => onShareDestination(m.destination)}
               />
+            </div>
+          );
+        }
+
+        if (m.type === "hotels") {
+          return (
+            <div key={m.id} className="animate-msg-in">
+              <HotelOptions
+                flightLabel={m.flightLabel}
+                flightPriceLabel={m.flightPriceLabel}
+                hotels={m.hotels}
+                onSelectHotel={onSelectHotel}
+                onBookFlight={onBookFlight}
+              />
+            </div>
+          );
+        }
+
+        if (m.type === "form") {
+          return (
+            <div key={m.id} className="flex justify-start animate-msg-in">
+              <BookingForm step={m.step} onSubmit={(data) => onFormSubmit(m.step, data)} />
+            </div>
+          );
+        }
+
+        if (m.type === "success") {
+          return (
+            <div key={m.id} data-testid="booking-success-message" className="flex justify-start animate-msg-in">
+              <div className="max-w-[85%] bg-emerald-50 border border-emerald-200 rounded-2xl rounded-bl-md px-4 py-3 shadow-sm">
+                <p className="text-sm font-bold text-emerald-700">
+                  Congratulations! Your flight & hotel are confirmed.
+                </p>
+                <p className="text-sm text-slate-700 mt-1">Check your email for the details.</p>
+                <button
+                  data-testid="booking-download-link"
+                  onClick={onDownload}
+                  className="mt-2 inline-flex items-center gap-1.5 text-sm font-semibold text-[#005B9B] hover:underline"
+                >
+                  <Link2 className="w-4 h-4" /> Click to Download Here
+                </button>
+              </div>
             </div>
           );
         }
