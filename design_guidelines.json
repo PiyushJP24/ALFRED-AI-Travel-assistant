@@ -1,0 +1,180 @@
+{
+  "project_name": "Alfred - EaseMyTrip AI Travel Assistant",
+  "app_type": "responsive_web_chat_interface",
+  "target_framework": "React (JavaScript) + Tailwind CSS + Framer Motion + Lucide Icons + Radix/Shadcn UI",
+  "responsive_layout_strategy": {
+    "desktop": "Centered chat container with max-width ~600px to 680px (max-w-2xl), centered horizontally (mx-auto), shadow-2xl, border border-slate-200/80, background canvas bg-slate-100/70, viewport height min-h-screen flex flex-col",
+    "mobile": "Full width layout (w-full max-w-full px-0), mobile app viewport feel with h-[100dvh] flex flex-col",
+    "breakpoints": "Responsive layout using Tailwind md:max-w-2xl md:my-4 md:rounded-3xl md:shadow-2xl md:border md:border-slate-200"
+  },
+  "brand_colors": {
+    "primary_nice_blue": "#005B9B",
+    "primary_deep_blue": "#004C8F",
+    "caribbean_blue_accent": "#00A4D5",
+    "deal_orange_accent": "#FF6B00",
+    "soft_orange_light": "#FFF4EC",
+    "yellow_chip_border": "#F59E0B",
+    "yellow_chip_bg": "#FEF3C7",
+    "light_canvas_bg": "#F4F7FA",
+    "white_card": "#FFFFFF",
+    "slate_text_primary": "#0F172A",
+    "slate_text_secondary": "#475569",
+    "slate_border": "#E2E8F0"
+  },
+  "typography": {
+    "font_family": "Plus Jakarta Sans, Outfit, sans-serif",
+    "heading_h1": "text-2xl font-bold tracking-tight text-slate-900",
+    "heading_h2": "text-xl font-semibold text-slate-900",
+    "heading_h3": "text-lg font-semibold text-slate-800",
+    "chat_bubble_text": "text-sm leading-relaxed text-slate-800",
+    "chip_label": "text-xs font-medium text-amber-900",
+    "meta_label": "text-xs font-medium text-slate-500 uppercase tracking-wider"
+  },
+  "image_urls": {
+    "destinations": [
+      {
+        "id": "goa",
+        "name": "Goa Beach & Heritage Getaway",
+        "category": "Relaxation & Culture",
+        "url": "https://images.pexels.com/photos/19993279/pexels-photo-19993279.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "description": "Scenic coastline and golden sands of Kudle & Palolem beaches in Goa",
+        "rating": "4.8",
+        "budget": "₹16,500 / person",
+        "duration": "4 Days / 3 Nights",
+        "flight_time": "1h 15m from BLR"
+      },
+      {
+        "id": "kyoto",
+        "name": "Kyoto Cultural & Temple Retreat",
+        "category": "Culture & Heritage",
+        "url": "https://images.unsplash.com/photo-1688876333005-ba86616caf3b?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxNzV8MHwxfHNlYXJjaHw0fHx0cmF2ZWwlMjBkZXN0aW5hdGlvbiUyMGJlYWNoJTIwbW91bnRhaW4lMjBoZXJpdGFnZSUyMGdvYSUyMGt5b3RvJTIwYmFsaXxlbnwwfHx8fDE3ODk3Mjg5NTJ8MA&ixlib=rb-4.1.0&q=85",
+        "description": "Historic pagoda temple surrounded by lush autumn woods in Kyoto",
+        "rating": "4.9",
+        "budget": "₹78,000 / person",
+        "duration": "6 Days / 5 Nights",
+        "flight_time": "7h 40m from BLR"
+      },
+      {
+        "id": "kerala",
+        "name": "Kerala Backwaters & Houseboat",
+        "category": "Nature & Relaxation",
+        "url": "https://images.pexels.com/photos/35735209/pexels-photo-35735209.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "description": "Serene Alleppey houseboat cruising tranquil emerald waters in Kerala",
+        "rating": "4.8",
+        "budget": "₹19,200 / person",
+        "duration": "5 Days / 4 Nights",
+        "flight_time": "1h 05m from BLR"
+      },
+      {
+        "id": "kochi",
+        "name": "Kochi Tropical Luxury Resort",
+        "category": "Luxury & Spa",
+        "url": "https://images.pexels.com/photos/12414221/pexels-photo-12414221.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "description": "Palatial luxury pool resort framed by coconut palms in Kochi",
+        "rating": "4.7",
+        "budget": "₹22,500 / person",
+        "duration": "3 Days / 2 Nights",
+        "flight_time": "1h 10m from BLR"
+      }
+    ],
+    "user_avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200",
+    "ai_avatar": "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=200"
+  },
+  "key_components_structure": {
+    "Header": {
+      "path": "src/components/Header.jsx",
+      "description": "Sticky top bar with z-50 depth, EaseMyTrip blue gradient accent line, back button, location dropdown ('Bengaluru ⌄'), hamburger menu + user avatar, heart saved trips icon with badge, and pencil new chat icon.",
+      "test_ids": {
+        "back_button": "header-back-button",
+        "hamburger_menu": "header-menu-button",
+        "user_profile": "header-user-avatar",
+        "location_dropdown": "header-location-selector",
+        "saved_heart_icon": "header-saved-list-button",
+        "new_chat_icon": "header-new-chat-button"
+      }
+    },
+    "OpeningState": {
+      "path": "src/components/OpeningState.jsx",
+      "description": "EaseMyTrip AI introduction banner with greeting, privacy notice pill, and 3 yellow/amber outlined suggestion chips ('Inspire me where to go', 'Build me an itinerary', 'Help me with booking').",
+      "test_ids": {
+        "greeting_title": "opening-greeting-heading",
+        "chip_inspire": "chip-inspire-me",
+        "chip_itinerary": "chip-build-itinerary",
+        "chip_booking": "chip-help-booking"
+      }
+    },
+    "ChatStream": {
+      "path": "src/components/ChatStream.jsx",
+      "description": "Scrollable chat message log containing user bubbles, Alfred AI bubbles, destination cards carousel, loading state animation, and itinerary summary cards.",
+      "test_ids": {
+        "chat_container": "chat-stream-container",
+        "user_message": "chat-user-message",
+        "ai_message": "chat-ai-message"
+      }
+    },
+    "DestinationCarousel": {
+      "path": "src/components/DestinationCarousel.jsx",
+      "description": "Horizontally scrollable flex container with snap-x scrolling showing 2-3 destination cards with tags (Adventure/Culture/Relaxation), price, duration, Save/Share buttons, and 'Select Destination' CTA.",
+      "test_ids": {
+        "carousel": "destination-carousel-list",
+        "card": "destination-card-item",
+        "save_button": "destination-save-button",
+        "share_button": "destination-share-button",
+        "select_button": "destination-select-button"
+      }
+    },
+    "ItinerarySummaryCard": {
+      "path": "src/components/ItinerarySummaryCard.jsx",
+      "description": "Rich card rendered inside the chat showing the compiled trip overview, highlights, day breakdown teaser, and prominent blue 'Open' button.",
+      "test_ids": {
+        "summary_card": "itinerary-summary-card",
+        "open_button": "itinerary-open-editor-button"
+      }
+    },
+    "ItineraryEditorModal": {
+      "path": "src/components/ItineraryEditorModal.jsx",
+      "description": "Full overlay or bottom sheet editor with day tabs (Day 1, Day 2...), draggable activity stop rows (Breakfast, Places 1-3, Lunch, Dinner), 'Add More Activity', 'Add Day', and 'Book on EaseMyTrip' CTA.",
+      "test_ids": {
+        "modal_container": "itinerary-editor-modal",
+        "close_modal": "itinerary-editor-close-button",
+        "day_tab": "itinerary-day-tab",
+        "stop_item": "itinerary-stop-row",
+        "drag_handle": "itinerary-stop-drag-handle",
+        "add_activity_button": "itinerary-add-activity-button",
+        "add_day_button": "itinerary-add-day-button",
+        "book_trip_button": "itinerary-book-now-button"
+      }
+    },
+    "SavedTripsDrawer": {
+      "path": "src/components/SavedTripsDrawer.jsx",
+      "description": "Side sheet / modal listing saved destination cards with option to view details or generate itinerary.",
+      "test_ids": {
+        "drawer_container": "saved-trips-drawer",
+        "saved_item": "saved-trip-item",
+        "remove_button": "saved-trip-remove-button"
+      }
+    },
+    "BottomInputBar": {
+      "path": "src/components/BottomInputBar.jsx",
+      "description": "Persistent input area at screen bottom with input field, send button, and thumbs up/down AI feedback buttons.",
+      "test_ids": {
+        "input_field": "chat-input-field",
+        "send_button": "chat-send-button",
+        "thumbs_up": "feedback-thumbs-up-button",
+        "thumbs_down": "feedback-thumbs-down-button"
+      }
+    }
+  },
+  "instructions_to_main_agent": [
+    "Ensure the app functions seamlessly in BOTH desktop browser mode (max-w-2xl centered column) and mobile viewport (full-width) via Tailwind break-point utilities (w-full md:max-w-2xl md:mx-auto).",
+    "Strictly follow EaseMyTrip branding colors: Primary Blue #005B9B / #004C8F, Caribbean Blue #00A4D5, Accent Orange #FF6B00, with clean white cards and soft slate background #F4F7FA.",
+    "Implement hardcoded branching responses in React useState with smooth typing / loading transitions when selecting options or sending custom text.",
+    "Make destination cards horizontally scrollable with snap-x scrolling and explicit Save (heart toggle) + Share (copies URL + toast notification) buttons.",
+    "Ensure the Itinerary Editor provides day tabs, reorderable activity rows with drag handles or up/down shift, 'Add More Activity' dialog/input, and 'Add Day' functionality.",
+    "Include a heart icon in the top header that opens the Saved Trips list with badge counts.",
+    "Include a pencil icon in the header that resets the chat session to the greeting state with confirmation toast.",
+    "Include a hamburger menu drawer with EaseMyTrip user options (My Bookings, Saved Trips, Settings, Travel Guides).",
+    "Include a location dropdown in the header allowing users to select their origin city (Bengaluru, Delhi, Mumbai, Hyderabad, Chennai).",
+    "Add 'data-testid' attributes to all interactive elements as specified in the component structure."
+  ]
+}
