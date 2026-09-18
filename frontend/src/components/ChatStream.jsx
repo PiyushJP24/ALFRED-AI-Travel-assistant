@@ -162,6 +162,9 @@ export default function ChatStream({
                   Congratulations! Your flight & hotel are confirmed.
                 </p>
                 <p className="text-sm text-slate-700 mt-1">Check your email for the details.</p>
+                <p data-testid="booking-reference" className="text-xs font-semibold text-slate-500 mt-1">
+                  Booking Ref: {m.ref}
+                </p>
                 <button
                   data-testid="booking-download-link"
                   onClick={onDownload}

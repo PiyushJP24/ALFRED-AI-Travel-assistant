@@ -394,7 +394,11 @@ export default function App() {
         setStage("booking-confirming");
       }, 400);
       later(() => {
-        replaceMessage(loadingId, { id: loadingId, type: "success" });
+        replaceMessage(loadingId, {
+          id: loadingId,
+          type: "success",
+          ref: `EMT-${Math.floor(100000 + Math.random() * 900000)}`,
+        });
         setStage("booked");
       }, 2400);
     },
@@ -652,6 +656,12 @@ export default function App() {
     handleSelectHotel(hotelsFor(booking.destination)[0]);
   }, [booking, handleSelectHotel]);
 
+  const handleBookFromEditor = useCallback(() => {
+    setEditorOpen(false);
+    push({ id: nextId(), type: "text", role: "user", text: "Book this trip on EaseMyTrip" });
+    startBooking();
+  }, [push, startBooking]);
+
   const savedDestinations = DESTINATIONS.filter((d) => savedIds.includes(d.id));
 
   return (
@@ -689,6 +699,7 @@ export default function App() {
           onUpdateDays={(days) => setItinerary((prev) => ({ ...prev, days }))}
           onSave={() => handleSaveDestination(itinerary.destination)}
           onShare={() => handleShareDestination(itinerary.destination)}
+          onBook={handleBookFromEditor}
         />
       )}
       <SavedTripsDrawer

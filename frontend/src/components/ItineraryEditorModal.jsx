@@ -33,6 +33,7 @@ export default function ItineraryEditorModal({
   onShare,
   saved,
   onSave,
+  onBook,
 }) {
   const { destination, plan, days } = itinerary;
   const [activeDay, setActiveDay] = useState(0);
@@ -224,7 +225,7 @@ export default function ItineraryEditorModal({
         <div className="shrink-0 border-t border-slate-100 p-3 sm:p-4">
           <button
             data-testid="itinerary-book-now-button"
-            onClick={() => toast.success("Redirecting to EaseMyTrip booking… (demo)")}
+            onClick={onBook}
             className="w-full bg-[#FF6B00] hover:bg-orange-600 text-white font-bold text-sm py-3 rounded-xl transition-colors shadow-lg shadow-orange-500/25"
           >
             Book this trip on EaseMyTrip
