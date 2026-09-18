@@ -35,6 +35,7 @@ Responsive web app for 'Alfred', an AI travel assistant chat interface for EaseM
 - P2: Map view with real map, shareable itinerary links, voice input, Escape-key drawer close
 
 ## Next Tasks
+- (iteration_5) Fixed ₹0 total-cost bug: root cause was a setState-updater side effect in handleSelectHotel (React may defer updaters, leaving the total snapshot null). Now totals are computed deterministically from current state before setBooking, all hotel lists pass through a withPrices normalizer (guaranteeing positive pricePerNight on every card, initial search and Modify re-search alike), and computeTotal has a defensive guard. Verified 19/19 with exact math for all Goa/Kerala/Jaipur pairs over repeated Modify→Hotel loops
 - (iteration_4) Added EaseMyTrip HOME screen entry point (HomeScreen.jsx) with Flights/Hotels/Trains tiles, services grid, promo banner, bottom nav, and floating Alfred bubble + intro popup card; tapping bubble opens chat as full-screen overlay, header back button returns home
 - Added Solo/Couple/Group travel-party personalization chips between destination selection and duration
 - Redesigned hamburger slide-out menu: profile name, Saved List, New Chat, chat history grouped Today/Yesterday
