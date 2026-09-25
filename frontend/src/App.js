@@ -21,7 +21,31 @@ import {
   formatINR,
   parseBudget,
   flightPrice,
+  mapAiDestination,
+  normalizeAiDays,
 } from "./data/alfredData";
+
+const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+
+async function alfredChat(payload) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 15000);
+  try {
+    const r = await fetch(`${API}/alfred/chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    });
+    if (!r.ok) return null;
+    const j = await r.json();
+    return j && j.ok ? j.data : null;
+  } catch (e) {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
 
 let idCounter = 0;
 const nextId = () => `m-${++idCounter}-${Date.now()}`;
@@ -105,34 +129,34 @@ export default function App() {
     setMessages((prev) => prev.map((m) => (m.id === id ? msg : m)));
   }, []);
 
-  const showDestinations = useCallback(() => {
-    const typingId = nextId();
-    push({ id: typingId, type: "typing" });
-    later(() => {
-      replaceMessage(typingId, {
-        id: typingId,
-        type: "text",
-        role: "ai",
-        text: "Alright! How about we discover some fabulous destinations? Give me a sec to find your next getaway.",
-      });
-      const typing2 = nextId();
-      later(() => push({ id: typing2, type: "typing" }), 500);
-      later(() => {
-        replaceMessage(typing2, {
-          id: typing2,
-          type: "carousel",
-          destinations: DESTINATIONS,
-        });
-        push({
-          id: nextId(),
-          type: "text",
-          role: "ai",
-          text: "Which one of these sounds like your kind of chill? Or would you like more options?",
-        });
-        setStage("destinations");
-      }, 1400);
-    }, 900);
-  }, [push, replaceMessage, later]);
+  const showDestinations = useCallback(
+    (userText) => {
+      const typingId = nextId();
+      push({ id: typingId, type: "typing" });
+      (async () => {
+        const ai = await alfredChat({ mode: "suggest", text: userText || "Inspire me with a travel destination in India." });
+        const hasAi = ai && Array.isArray(ai.destinations) && ai.destinations.length > 0;
+        const dests = hasAi ? ai.destinations.map((d, i) => mapAiDestination(d, i)) : DESTINATIONS;
+        const introMsg =
+          (hasAi && ai.message) ||
+          "Alright! How about we discover some fabulous destinations? Give me a sec to find your next getaway.";
+        replaceMessage(typingId, { id: typingId, type: "text", role: "ai", text: introMsg });
+        const typing2 = nextId();
+        push({ id: typing2, type: "typing" });
+        later(() => {
+          replaceMessage(typing2, { id: typing2, type: "carousel", destinations: dests });
+          push({
+            id: nextId(),
+            type: "text",
+            role: "ai",
+            text: "Which one of these sounds like your kind of chill? Or would you like more options?",
+          });
+          setStage("destinations");
+        }, 700);
+      })();
+    },
+    [push, replaceMessage, later]
+  );
 
   const askDuration = useCallback(
     (dest) => {
@@ -184,19 +208,16 @@ export default function App() {
         text: "Making your personalized itinerary... hang on, it will just take a few sec!",
       });
       setStage("building");
-      later(() => {
-        const days = buildDays(dest, plan.days);
+      (async () => {
+        const ai = await alfredChat({ mode: "itinerary", destination: destShort(dest), days: plan.days });
+        const hasAi = ai && Array.isArray(ai.days) && ai.days.length > 0;
+        const days = hasAi ? normalizeAiDays(ai.days) : buildDays(dest, plan.days);
         setItinerary({ destination: dest, plan, days });
-        replaceMessage(loadingId, {
-          id: loadingId,
-          type: "summary",
-          destination: dest,
-          plan,
-        });
+        replaceMessage(loadingId, { id: loadingId, type: "summary", destination: dest, plan });
         setStage("summary");
-      }, 2000);
+      })();
     },
-    [push, replaceMessage, later]
+    [push, replaceMessage]
   );
 
   const askBudget = useCallback(
@@ -593,7 +614,7 @@ export default function App() {
         return;
       }
       if (stage === "greeting" || stage === "destinations") {
-        showDestinations();
+        showDestinations(text);
         return;
       }
       if (stage === "duration" && selectedDestination) {

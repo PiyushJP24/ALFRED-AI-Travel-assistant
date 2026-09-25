@@ -241,3 +241,65 @@ export function flightPrice(destination) {
   const m = destination.flight.replace(/,/g, "").match(/\d+/);
   return m ? parseInt(m[0], 10) : 5000;
 }
+
+export const CATEGORY_IMAGES = {
+  Adventure: [
+    "https://images.pexels.com/photos/15827754/pexels-photo-15827754.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+    "https://images.pexels.com/photos/13585378/pexels-photo-13585378.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+    "https://images.unsplash.com/photo-1725006136539-46bef885df06?crop=entropy&cs=srgb&fm=jpg&q=85&w=940",
+  ],
+  Culture: [
+    "https://images.unsplash.com/photo-1504705759706-c5ee7158f8bb?crop=entropy&cs=srgb&fm=jpg&q=85&w=940",
+    "https://images.unsplash.com/photo-1589901164570-f9de6556e1c1?crop=entropy&cs=srgb&fm=jpg&q=85&w=940",
+    "https://images.unsplash.com/photo-1590766940554-634a7ed41450?crop=entropy&cs=srgb&fm=jpg&q=85&w=940",
+  ],
+  Relaxation: [
+    "https://images.pexels.com/photos/12950219/pexels-photo-12950219.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+    "https://images.pexels.com/photos/37833119/pexels-photo-37833119.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+    "https://images.unsplash.com/photo-1674205710296-606898df6642?crop=entropy&cs=srgb&fm=jpg&q=85&w=940",
+  ],
+};
+
+const GENERIC_PLACES = [
+  "Old Town Heritage Walk", "Central Market Bazaar", "Sunset Viewpoint", "Riverside Promenade",
+  "Local Art Museum", "Hilltop Fort", "Botanical Gardens", "Lakeside Boardwalk",
+  "Historic Temple Quarter", "Adventure Activity Park", "Scenic Nature Trail", "Waterfront Cafe Strip",
+];
+const GENERIC_EATS = [
+  "The Local Kitchen", "Spice Route Diner", "Riverside Cafe", "Heritage Thali House",
+  "Sunset Rooftop Grill", "Streetside Chaat Corner",
+];
+
+const slugify = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+
+export function mapAiDestination(aiDest, index = 0) {
+  const cat = ["Adventure", "Culture", "Relaxation"].includes(aiDest.category) ? aiDest.category : "Relaxation";
+  const imgs = CATEGORY_IMAGES[cat];
+  const price = Number(aiDest.flightPrice) > 0 ? Number(aiDest.flightPrice) : 5000;
+  return {
+    id: `${slugify(aiDest.name || "trip")}-${index}`,
+    name: aiDest.name || "Mystery Destination",
+    tag: cat,
+    image: imgs[index % imgs.length],
+    dates: "Flexible dates",
+    flight: `₹${price.toLocaleString("en-IN")} flight · ${aiDest.duration || "2h"} from BLR`,
+    blurb: aiDest.description || "",
+    places: GENERIC_PLACES,
+    eats: GENERIC_EATS,
+    ai: true,
+  };
+}
+
+export function normalizeAiDays(days) {
+  const stamp = Date.now();
+  return days.map((d, di) => ({
+    id: `day-${di + 1}-${stamp}-${di}`,
+    label: d.label || `Day ${di + 1}`,
+    stops: (d.stops || []).map((s, si) => ({
+      id: `s-${di}-${si}-${stamp}`,
+      kind: s.kind === "meal" ? "meal" : "place",
+      label: s.label || (s.kind === "meal" ? "Meal" : `Place ${si + 1}`),
+      detail: s.detail || "",
+    })),
+  }));
+}

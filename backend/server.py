@@ -1,14 +1,17 @@
-from fastapi import FastAPI, APIRouter
+from fastapi import FastAPI, APIRouter, HTTPException
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
+import re
+import json
 import logging
 from pathlib import Path
 from pydantic import BaseModel, Field, ConfigDict
 from typing import List
 import uuid
 from datetime import datetime, timezone
+from emergentintegrations.llm.chat import LlmChat, UserMessage
 
 
 ROOT_DIR = Path(__file__).parent
@@ -65,6 +68,69 @@ async def get_status_checks():
             check['timestamp'] = datetime.fromisoformat(check['timestamp'])
     
     return status_checks
+
+ALFRED_SYSTEM = (
+    "You are Alfred, a warm and personable AI travel assistant for EaseMyTrip. "
+    "When a user describes a travel mood or preference, respond conversationally in 1-2 sentences, "
+    "then suggest exactly 2-3 destinations in India. For each destination, return: name, a short "
+    "evocative description (under 20 words), a category tag (choose one: Adventure, Culture, Relaxation), "
+    "an approximate round-trip flight price in INR from Bengaluru, and flight duration. Format your response "
+    "as JSON matching this structure: { \"message\": string, \"destinations\": [{ \"name\": string, "
+    "\"description\": string, \"category\": string, \"flightPrice\": number, \"duration\": string }] }. "
+    "When asked to build an itinerary, generate a day-by-day plan with 2-3 named activities/meals per day, "
+    "using realistic-sounding local spot names. Stay strictly on travel topics. Never discuss pricing for "
+    "flights/hotels/bookings — that data comes from a separate system, not from you."
+)
+
+
+class AlfredRequest(BaseModel):
+    mode: str
+    text: str = ""
+    destination: str = ""
+    days: int = 4
+
+
+def _extract_json(raw: str):
+    s = (raw or "").strip()
+    if s.startswith("```"):
+        s = re.sub(r"^```(?:json)?", "", s).strip()
+        s = re.sub(r"```$", "", s).strip()
+    start, end = s.find("{"), s.rfind("}")
+    if start != -1 and end != -1:
+        s = s[start:end + 1]
+    return json.loads(s)
+
+
+@api_router.post("/alfred/chat")
+async def alfred_chat(req: AlfredRequest):
+    api_key = os.environ.get("GEMINI_API_KEY", "").strip()
+    if not api_key:
+        raise HTTPException(status_code=503, detail="AI not configured")
+    if req.mode == "itinerary":
+        user_text = (
+            f"Build a {req.days}-day travel itinerary for {req.destination}. "
+            "Return ONLY JSON in this exact shape: "
+            "{\"message\": string, \"days\": [{\"label\": \"Day 1\", \"stops\": "
+            "[{\"kind\": \"meal\"|\"place\", \"label\": string, \"detail\": string}]}]}. "
+            "Each day must include stops in order: Breakfast, Place 1, Lunch, Place 2, Place 3, Dinner. "
+            "label is the slot name (e.g. 'Breakfast', 'Place 1'); detail is the realistic-sounding local spot name."
+        )
+    else:
+        user_text = req.text or "Inspire me with a travel destination in India."
+    try:
+        chat = LlmChat(
+            api_key=api_key,
+            session_id=f"alfred-{req.mode}",
+            system_message=ALFRED_SYSTEM,
+        ).with_model("gemini", "gemini-3-flash-preview")
+        resp = await chat.send_message(UserMessage(text=user_text))
+        text = resp if isinstance(resp, str) else getattr(resp, "content", str(resp))
+        data = _extract_json(text)
+        return {"ok": True, "data": data}
+    except Exception:
+        logger.exception("alfred_chat failed")
+        raise HTTPException(status_code=502, detail="AI call failed")
+
 
 # Include the router in the main app
 app.include_router(api_router)

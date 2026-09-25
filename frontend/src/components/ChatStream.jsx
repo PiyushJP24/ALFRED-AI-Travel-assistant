@@ -42,7 +42,7 @@ export default function ChatStream({
       className="flex-1 overflow-y-auto px-3 sm:px-5 py-4 space-y-3"
     >
       <div className="flex items-center justify-center gap-1.5 text-[11px] font-semibold text-slate-400 uppercase tracking-widest">
-        <Bot className="w-3.5 h-3.5" /> Powered by OpenAI
+        <Bot className="w-3.5 h-3.5" /> Powered by AI
       </div>
 
       {messages.map((m) => {
