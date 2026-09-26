@@ -87,7 +87,7 @@ class AlfredRequest(BaseModel):
     mode: str
     text: str = ""
     destination: str = ""
-    days: int = 4
+    days: int = Field(default=4, ge=1, le=10)
 
 
 def _extract_json(raw: str):
