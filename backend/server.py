@@ -11,7 +11,9 @@ from pydantic import BaseModel, Field, ConfigDict
 from typing import List
 import uuid
 from datetime import datetime, timezone
-from emergentintegrations.llm.chat import LlmChat, UserMessage
+import asyncio
+from google import genai
+from google.genai import types
 
 
 ROOT_DIR = Path(__file__).parent
@@ -118,13 +120,14 @@ async def alfred_chat(req: AlfredRequest):
     else:
         user_text = req.text or "Inspire me with a travel destination in India."
     try:
-        chat = LlmChat(
-            api_key=api_key,
-            session_id=f"alfred-{req.mode}",
-            system_message=ALFRED_SYSTEM,
-        ).with_model("gemini", "gemini-3-flash-preview")
-        resp = await chat.send_message(UserMessage(text=user_text))
-        text = resp if isinstance(resp, str) else getattr(resp, "content", str(resp))
+        client = genai.Client(api_key=api_key)
+        gemini_resp = await asyncio.to_thread(
+            client.models.generate_content,
+            model="gemini-3-flash-preview",
+            contents=user_text,
+            config=types.GenerateContentConfig(system_instruction=ALFRED_SYSTEM),
+        )
+        text = gemini_resp.text
         data = _extract_json(text)
         return {"ok": True, "data": data}
     except Exception:
