@@ -76,7 +76,7 @@ ALFRED_SYSTEM = (
     "When a user describes a travel mood or preference, respond conversationally in 1-2 sentences, "
     "then suggest exactly 2-3 destinations in India. For each destination, return: name, a short "
     "evocative description (under 20 words), a category tag (choose one: Adventure, Culture, Relaxation), "
-    "an approximate round-trip flight price in INR from Bengaluru, and flight duration. Format your response "
+    "an approximate one-way flight price in INR from Bengaluru, and flight duration. Format your response "
     "as JSON matching this structure: { \"message\": string, \"destinations\": [{ \"name\": string, "
     "\"description\": string, \"category\": string, \"flightPrice\": number, \"duration\": string }] }. "
     "When asked to build an itinerary, generate a day-by-day plan with 2-3 named activities/meals per day, "
@@ -85,11 +85,20 @@ ALFRED_SYSTEM = (
 )
 
 
+HOTELS_SYSTEM = (
+    "You are Alfred, a travel assistant for EaseMyTrip. You suggest realistic-sounding hotels "
+    "for a destination in India. Return ONLY valid JSON with no extra text. Hotel names should "
+    "sound like plausible local properties. Prices are approximate per-night demo rates in INR, "
+    "not real quotes."
+)
+
+
 class AlfredRequest(BaseModel):
     mode: str
     text: str = ""
     destination: str = ""
     days: int = Field(default=4, ge=1, le=10)
+    max_price: int = Field(default=0, ge=0)
 
 
 def _extract_json(raw: str):
@@ -108,6 +117,7 @@ async def alfred_chat(req: AlfredRequest):
     api_key = os.environ.get("GEMINI_API_KEY", "").strip()
     if not api_key:
         raise HTTPException(status_code=503, detail="AI not configured")
+    system_text = ALFRED_SYSTEM
     if req.mode == "itinerary":
         user_text = (
             f"Build a {req.days}-day travel itinerary for {req.destination}. "
@@ -117,18 +127,41 @@ async def alfred_chat(req: AlfredRequest):
             "Each day must include stops in order: Breakfast, Place 1, Lunch, Place 2, Place 3, Dinner. "
             "label is the slot name (e.g. 'Breakfast', 'Place 1'); detail is the realistic-sounding local spot name."
         )
+    elif req.mode == "hotels":
+        user_text = (
+            f"Suggest exactly 2 hotels in {req.destination}. "
+            'Return ONLY JSON in this exact shape: '
+            '{"hotels": [{"name": string, "rating": number, "reviews": string, "pricePerNight": number}]}. '
+            "rating is between 7.5 and 9.5 with one decimal; reviews is a short count string like 3.2K; "
+            "pricePerNight is a whole number in INR. "
+            "The first hotel is the premium pick and the second is a value pick."
+        )
+        if req.max_price > 0:
+            user_text += f" Both hotels must cost no more than {req.max_price} INR per night."
+        system_text = HOTELS_SYSTEM
     else:
         user_text = req.text or "Inspire me with a travel destination in India."
     try:
         client = genai.Client(api_key=api_key)
-        gemini_resp = await asyncio.to_thread(
-            client.models.generate_content,
-            model="gemini-3-flash-preview",
-            contents=user_text,
-            config=types.GenerateContentConfig(system_instruction=ALFRED_SYSTEM),
-        )
-        text = gemini_resp.text
-        data = _extract_json(text)
+        last_err = None
+        data = None
+        for attempt in range(3):
+            try:
+                gemini_resp = await asyncio.to_thread(
+                    client.models.generate_content,
+                    model="gemini-3.5-flash-lite",
+                    contents=user_text,
+                    config=types.GenerateContentConfig(system_instruction=system_text, response_mime_type="application/json"),
+                )
+                text = gemini_resp.text
+                data = _extract_json(text)
+                break
+            except Exception as e:
+                last_err = e
+                data = None
+                await asyncio.sleep(2)
+        if data is None:
+            raise last_err
         return {"ok": True, "data": data}
     except Exception:
         logger.exception("alfred_chat failed")

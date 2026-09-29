@@ -29,7 +29,7 @@ const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 async function alfredChat(payload) {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 15000);
+  const timer = setTimeout(() => controller.abort(), 30000);
   try {
     const r = await fetch(`${API}/alfred/chat`, {
       method: "POST",
@@ -56,7 +56,39 @@ const withPrices = (hotels) =>
     ...h,
     pricePerNight: Number(h.pricePerNight) > 0 ? Number(h.pricePerNight) : 5000,
   }));
-const hotelsFor = (dest) => withPrices(HOTELS[dest.id] || HOTELS.default);
+const hotelCache = {};
+const HOTEL_IMAGES = [...new Set(Object.values(HOTELS).flat().map((h) => h.image))];
+const hotelsFor = (dest) => hotelCache[dest.id] || withPrices(HOTELS[dest.id] || HOTELS.default);
+
+const fetchHotels = async (dest, days, budget) => {
+  try {
+    let maxPrice = 0;
+    if (budget) {
+      const cap = Math.floor((budget - flightPrice(dest) * 2) / Math.max(days - 1, 1));
+      if (cap > 0) maxPrice = cap;
+    }
+    const ai = await alfredChat({ mode: "hotels", destination: destShort(dest), max_price: maxPrice });
+    const list = ai && Array.isArray(ai.hotels) ? ai.hotels.filter((h) => h && h.name).slice(0, 2) : [];
+    if (list.length > 0) {
+      const seed = [...String(dest.id)].reduce((a, c) => a + c.charCodeAt(0), 0);
+      hotelCache[dest.id] = withPrices(
+        list.map((h, i) => ({
+          id: `${dest.id}-h${i + 1}`,
+          name: h.name,
+          rating: Number(h.rating) > 0 ? Number(h.rating) : 8.2,
+          reviews: h.reviews || "1.2K",
+          pricePerNight: h.pricePerNight,
+          image: HOTEL_IMAGES[(seed + i) % HOTEL_IMAGES.length],
+        }))
+      );
+    } else {
+      delete hotelCache[dest.id];
+    }
+  } catch (e) {
+    delete hotelCache[dest.id];
+  }
+  return hotelsFor(dest);
+};
 const computeTotal = (b, hotel) => {
   const perNight = Number(hotel.pricePerNight) > 0 ? Number(hotel.pricePerNight) : 5000;
   return flightPrice(b.destination) * 2 + perNight * (b.plan.days - 1);
@@ -274,6 +306,7 @@ export default function App() {
     (text) => {
       const budget = parseBudget(text);
       setBooking((b) => (b ? { ...b, budget } : b));
+      setStage("booking-searching");
       const dest = booking?.destination || DESTINATIONS[0];
       const days = booking?.plan?.days || 4;
       const budgetTxt = budget ? ` under ${formatINR(budget)}` : "";
@@ -284,13 +317,14 @@ export default function App() {
         text: `Perfect! So, for ${days}D/${days - 1}N stay${budgetTxt} in ${destShort(dest)} — let me find some good flight & hotel options. Give me a moment!`,
       });
       later(() => push({ id: nextId(), type: "text", role: "ai", text: "Just a sec, finding the best flight & stay for you" }), 800);
-      later(() => {
+      later(async () => {
+        const hotels = await fetchHotels(dest, days, budget);
         push({
           id: nextId(),
           type: "hotels",
           flightLabel: "AA (Round)",
           flightPriceLabel: formatINR(flightPrice(dest) * 2),
-          hotels: hotelsFor(dest),
+          hotels,
         });
         setStage("booking-options");
       }, 1800);
@@ -595,7 +629,11 @@ export default function App() {
         return;
       }
       if (stage === "booking-dates" && booking) {
-        handleBookingDates(text);
+        if (/\d{1,2}\s*(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/i.test(text)) {
+          handleBookingDates(text);
+        } else {
+          push({ id: nextId(), type: "text", role: "ai", text: "Please pick your travel dates from the calendar above." });
+        }
         return;
       }
       if (stage === "booking-budget" && booking) {
@@ -609,7 +647,7 @@ export default function App() {
       }
 
       const inBooking = stage.startsWith("booking");
-      if (!inBooking && stage !== "booked" && /book|flight|fly/i.test(text)) {
+      if (!inBooking && stage !== "booked" && selectedDestination && /book|flight|fly/i.test(text)) {
         startBooking();
         return;
       }
